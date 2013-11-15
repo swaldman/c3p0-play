@@ -1,0 +1,8 @@
++ fix bonecp idleMaxAge mapping; it's not the same as c3p0.maxIdleTime
++ setting for eager vs lazy initialization
++ licenses plus license headers
++ test of config reading
++ test / check setup via config of ConnectionCustomizer / extensions
++ README.md / documentation
+
+
