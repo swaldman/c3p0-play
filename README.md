@@ -165,7 +165,7 @@ If you wish to configure DaraSource purely in c3p0 native format, you can declar
 be mapped to a single DataSource that will be made available at runtime.
 + `c3p0.play.enabled`: [boolean value, default is `true`] The plugin will function and initialize
 c3p0 DataSources if true (or unset). The plugin will do nothing if this value is `false`.
-+ `c3p0.play.importPlayStyleConfig`: [boolean value, default is `true`] If set to `false`, c3p0 will _not_ try
++ `c3p0.play.importPlayStyleConfig`: [boolean value, default is `true`, __very rarely used__] If set to `false`, c3p0 will _not_ try
 to transalte and import Play-style config. This is useful if you wish to run your app in mixed mode, with some
 c3p0 DataSources and some BoneCP DataSources. You can configure c3p0 DataSources with `c3p0.play.dataSourceNames`
 and leave the standard Play configurtion style to BoneCP.
