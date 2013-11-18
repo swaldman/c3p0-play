@@ -120,7 +120,7 @@ c3p0.named-configs.awesomedb {
 }
 ```
 You can configure as many DataSources as you like, and in any valid format for `conf/application.conf`.
-The following is the same configuration as the one above:
+For example, the following is the same configuration as the one above:
 ```
 dbplugin=disabled
 c3p0.play.enabled=true
@@ -156,3 +156,17 @@ For the most part, c3p0-play can be configured exactly as
 [documented for the main c3p0 library](http://www.mchange.com/projects/c3p0/).
 Play's "[HOCON](https://github.com/typesafehub/config/blob/master/HOCON.md)" `application.conf` 
 file format is now [natively supported by c3p0](http://www.mchange.com/projects/c3p0/#c3p0_conf).
+All standard c3p0 configuration is supported.
+
+There are a few configuration parameters specific to the c3p0-play plugin:
+
++ `c3p0.play.dataSourceNames`: [a comma separated String or HOCON list of Strings, default in names read from play-style config]
+If you wish to configure DaraSource purely in c3p0 native format, you can declare DataSource here. Each name will
+be mapped to a single DataSource that will be made available at runtime.
++ `c3p0.play.enabled`: [boolean value, default is `true`] The plugin will function and initialize
+c3p0 DataSources if true (or unset). The plugin will do nothing if this value is `false`.
++ `c3p0.play.importPlayStyleConfig`: [boolean value, default is `true`] If set to `false`, c3p0 will _not_ try
+to transalte and import Play-style config. This is useful if you wish to run your app in mixed mode, with some
+c3p0 DataSources and some BoneCP DataSources. You can configure c3p0 DataSources with `c3p0.play.dataSourceNames`
+and leave the standard Play configurtion style to BoneCP.
+
