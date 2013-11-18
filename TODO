@@ -3,6 +3,6 @@
 + setting for eager vs lazy initialization
 + test of config reading
 + test / check setup via config of ConnectionCustomizer / extensions
-+ README.md / documentation
++ README.md: documentation of translation of parameters
 
 
