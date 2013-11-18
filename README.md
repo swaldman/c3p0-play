@@ -186,6 +186,6 @@ Your feedback is appreciated. The author monitors the
 your best bet for support.
 
 Copyright (C) 2013 by Machinery For Change, Inc. All rights reserved. This library is offered to
-you under EITHER 1) The [GNU Lesser General Public License (LGPL), version 2.1](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+you under EITHER i) The [GNU Lesser General Public License (LGPL), version 2.1](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 or 
-2) The [Eclipse Public License (EPL), version 1.0](http://www.eclipse.org/org/documents/epl-v10.php), at your option.
+ii) The [Eclipse Public License (EPL), version 1.0](http://www.eclipse.org/org/documents/epl-v10.php), at your option.
