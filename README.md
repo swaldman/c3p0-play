@@ -8,7 +8,7 @@ effortless first-class alternative to Play's built-in pool.
 
 ### Quickstart ###
 
-+ Configure your DataSources in the [ordinary Play way](http://www.playframework.com/documentation/2.2.x/ScalaDatabase).
++ Configure your DataSources in the [ordinary Play way](http://www.playframework.com/documentation/2.2.x/SettingsJDBC).
 + Add the c3p0-play plug-in to your Play project's build.sbt as a libraryDependency:
 
 ```
@@ -35,4 +35,33 @@ default BoneCP pool, or to mix the two pools. To enable that...
 1. c3p0-play reads Play's default DataSource configuration and translates it to c3p0 configuration. Some (not so common) BoneCP configuration properties do not easily map to c3p0. Those will be ignored with a warning in the logs upon initiatlization. (They are also documented below.)
 2. [_All_ c3p0 configuration](http://www.mchange.com/projects/c3p0/#configuration_properties) can be embedded directly in your `conf/application.conf` file. c3p0-native configuration will take precedence over play-style configuration for c3p0 pools.
 
-For example:
+For example, the following configuration infomration...
+
+```
+dbplugin=disabled
+c3p0.play.enabled=true
+
+db.default.driver=org.h2.Driver
+db.default.url="jdbc:h2:mem:play"
+db.default.user=sa
+db.default.password=secret
+
+db.default.acquireIncrement=1
+db.default.testConnectionOnCheckout=true
+
+c3p0.acquireIncrement=5
+c3p0.minPoolSize=10
+c3p0.maxPoolSize=30
+```
+
+would configure a c3p0 DataSource named `default` using the driver, url, and authentication information given.
+
++ `acquireIncrement` (a configuration parameter shared by c3p0 and BoneCP) is configured twice, once in Play-typical format and once in c3p0-native format.
+The value in c3p0-native format overrides and is used in preference to the value in Play format when both are present.
+This usefully allows users to maintain distinct configrations for BoneCP and c3p0 while users profile and experiment with the two libraries.
+
++ `testConnectionOnCheckout` is a c3p0 parameter. It is translated from Play format and used as-is, since there is no c3p0-native value to override it.
+
++ `minPoolSize` and `maxPoolSize` are included in c3p0-native and conflict with nothing. Unsurprisingly, those values will be used by c3p0 DataSources.
+
+ 
