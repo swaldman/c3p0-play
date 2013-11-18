@@ -170,3 +170,22 @@ to transalte and import Play-style config. This is useful if you wish to run you
 c3p0 DataSources and some BoneCP DataSources. You can configure c3p0 DataSources with `c3p0.play.dataSourceNames`
 and leave the standard Play configurtion style to BoneCP.
 
+### Alternatives and inspirations ###
+
+There have been at least two other projects aimed at bringing c3p0 to Play, Ivan Meredith's 
+[play2-c3p0-plugin](https://github.com/hadashi/play2-c3p0-plugin) and FuRyu's
+[play-c3p0-plugin](https://github.com/Furyu/play-c3p0-plugin). This current project
+borrowed a great deal from [DB.scala](https://github.com/playframework/playframework/blob/2.2.x/framework/src/play-jdbc/src/main/scala/play/api/db/DB.scala)
+in the Play framework's source, which includes the default BoneCPPlugin plugin class.
+
+### Contact and Copyright ###
+
+This library was authored by Steve Waldman <[swaldman@mchange.com](mailto:swaldman@mchange.com)>.
+Your feedback is appreciated. The author monitors the 
+[c3p0 tag on stackoverflow](http://stackoverflow.com/questions/tagged/c3p0), which is probably
+your best bet for support.
+
+Copyright (C) 2013 by Machinery For Change, Inc. All rights reserved. This library is offered to
+you under EITHER 1) The [GNU Lesser General Public License (LGPL), version 2.1](LICENSE-LGPL) or 
+2) The [Eclipse Public License (EPL), version 1.0](LICENSE-EGPL), at your option.
+
