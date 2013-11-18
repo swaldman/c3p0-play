@@ -6,6 +6,13 @@ default JDBC Connection pool. However, some users or applications may prefer to 
 a variety of reasons. This plug-in enables the use of [c3p0](http://www.mchange.com/projects/c3p0/) as an
 effortless first-class alternative to Play's built-in pool.
 
++ [Quickstart](#quickstart)
++ [Basic configuration](#basic-configuration)
++ [Advanced configuration](#advanced-configuration)
++ [c3p0-play-specific configuration parameters](#play-specific-configuration-parameters)
++ [Alternatives and inspirations](#alternatives-and-inspirations)
++ [Contact and copyright](#contact-and-copyright)
+
 ### Quickstart ###
 
 + Configure your DataSources in the [ordinary Play way](http://www.playframework.com/documentation/2.2.x/SettingsJDBC).
@@ -29,8 +36,13 @@ c3p0.play.enabled=true
 The c3p0-play plugin is designed to make it extremely easy to "drop-in" c3p0, to drop-back to the
 default BoneCP pool, or to mix the two pools. To enable that...
 
-1. c3p0-play reads Play's default DataSource configuration and translates it to c3p0 configuration. Some (not so common) BoneCP configuration properties do not easily map to c3p0. Those will be ignored with a warning in the logs upon initiatlization. (They are also documented below.)
-2. [_All_ c3p0 configuration](http://www.mchange.com/projects/c3p0/#configuration_properties) can be embedded directly in your `conf/application.conf` file. c3p0-native configuration will take precedence over play-style configuration for c3p0 pools.
+1. c3p0-play reads Play's default DataSource configuration and translates it to c3p0 configuration.
+Some (not so common) BoneCP configuration properties do not easily map to c3p0. Those will be ignored 
+with a warning in the logs upon initiatlization. (They are also documented below.)
+2. [_All_ c3p0 configuration](http://www.mchange.com/projects/c3p0/#configuration_properties) can be
+embedded directly in your `conf/application.conf` file. c3p0-native configuration will take precedence
+over play-style configuration for c3p0 pools. Dynamic reloading of configuration on application restart
+is supported.
 
 For example, the following configuration infomration...
 
@@ -150,7 +162,7 @@ c3p0 {
   }
 }
 ```
-### Play-specific configuration parameters ###
+### c3p0-play-specific configuration parameters ###
 
 For the most part, c3p0-play can be configured exactly as
 [documented for the main c3p0 library](http://www.mchange.com/projects/c3p0/).
@@ -178,7 +190,7 @@ There have been at least two other projects aimed at bringing c3p0 to Play, Ivan
 borrowed a great deal from [DB.scala](https://github.com/playframework/playframework/blob/2.2.x/framework/src/play-jdbc/src/main/scala/play/api/db/DB.scala)
 in the Play framework's source, which includes the default BoneCPPlugin plugin class.
 
-### Contact and Copyright ###
+### Contact and copyright ###
 
 This library was authored by Steve Waldman <[swaldman@mchange.com](mailto:swaldman@mchange.com)>.
 Your feedback is appreciated. The author monitors the 
