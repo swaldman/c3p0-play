@@ -9,7 +9,7 @@ effortless first-class alternative to Play's built-in pool.
 + [Quickstart](#quickstart)
 + [Basic configuration](#basic-configuration)
 + [Advanced configuration](#advanced-configuration)
-+ [c3p0-play-specific configuration parameters](#play-specific-configuration-parameters)
++ [c3p0-play-specific configuration parameters](#c3p0-play-specific-configuration-parameters)
 + [Alternatives and inspirations](#alternatives-and-inspirations)
 + [Contact and copyright](#contact-and-copyright)
 
