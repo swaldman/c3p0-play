@@ -54,6 +54,8 @@ object C3P0PlayConfig {
 
   val DefaultDataSourceName = "default"; //token expected by play.api.db.DB
 
+  val C3P0Key = "c3p0";
+
   val DataSourceNamesKey       = "c3p0.play.dataSourceNames";
   val ImportPlayStyleConfigKey = "c3p0.play.importPlayStyleConfig";
 
@@ -82,7 +84,8 @@ object C3P0PlayConfig {
       "maxConnectionsPerPartition",
       "minConnectionsPerPartition",
       "partitionCount",
-      "statisticsEnabled"
+      "statisticsEnabled",
+      "idleMaxAge"
     );
 
     // names that have to be transformed only
@@ -92,7 +95,6 @@ object C3P0PlayConfig {
       "pass" -> "password",
       "connectionTestStatement" -> "preferredTestQuery",
       "connectionTimeout" -> "clientTimeout",
-      "idleMaxAge" -> "maxIdleTime",
       "jndiName" -> "extensions.jndiName"
     );
 
@@ -272,7 +274,13 @@ class C3P0PlayConfig( application : Application ){
       into.withValue( DataSourceNamesKey, ConfigValueFactory.fromAnyRef( new java.util.ArrayList( javaSet ) ) )
     }
     def mergeOrdinaryConfig( into : Config, name : String, namedConfig : NamedConfig ) : Config = {
-      val importedBindings = ConfigValueFactory.fromAnyRef( namedConfig.ordinaryConfig.asJava, ImportedConfigOriginDescription );
+      val rawImportedBindings = namedConfig.ordinaryConfig;
+
+      // we need to shadow variables also provided via c3p0-native config
+      val shadows = try{ into.getConfig( C3P0Key ) } catch { case cme : ConfigException.Missing => ConfigFactory.empty() };
+      def unshadowed( binding : Pair[String,_] ) : Boolean = shadows.hasPath( binding._1 );
+
+      val importedBindings = ConfigValueFactory.fromAnyRef( (rawImportedBindings filter unshadowed).asJava, ImportedConfigOriginDescription );
       into.withFallback( ConfigFactory.empty( ImportedConfigOriginDescription ).withValue( NamedConfigPrefix + name, importedBindings ) );
     }
     def connectionCustomizerClassNameKey( name : String ) : String = {
@@ -280,6 +288,13 @@ class C3P0PlayConfig( application : Application ){
       s"c3p0{$middle}.connectionCustomizerClassName"
     }
     def setupConnectionCustomizer( into : Config, name : String, namedConfig : NamedConfig ) : Config = {
+      // We don't need to shadow c3p0-style not-named-config variables here, because c3p0 doesn't
+      // accept the variables that give rise a c3p0-play automatic ConnectionCustomizer as native
+      // config.
+      //
+      // In the future, we might want to think about how to handle ConnectionCustomizer extensions 
+      // variables if manually provided.
+
       if (! namedConfig.connectionCustomizerConfig.isEmpty ) {
         val ncKey = connectionCustomizerClassNameKey(name);
         val genKey = connectionCustomizerClassNameKey(null);

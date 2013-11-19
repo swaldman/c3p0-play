@@ -175,8 +175,11 @@ There are a few configuration parameters specific to the c3p0-play plugin:
 + `c3p0.play.dataSourceNames`: [a comma separated String or HOCON list of Strings, default in names read from play-style config]
 If you wish to configure DaraSource purely in c3p0 native format, you can declare DataSource here. Each name will
 be mapped to a single DataSource that will be made available at runtime.
-+ `c3p0.play.enabled`: [boolean value, default is `true`] The plugin will function and initialize
-c3p0 DataSources if true (or unset). The plugin will do nothing if this value is `false`.
++ `c3p0.play.eager`: [boolean value, default is `true`] If `true` (or unset), the plugin will create and destroy a Connection on startupt to
+eagerly initialize Connection pools in c3p0 DataSources. If `false`, the plugin will immediately prepare DataSources, but the pool initialization
+and the overhead of pool maintenance will be deferred until the first client request.
++ `c3p0.play.enabled`: [boolean value, default is `true`] The plugin will function and create
+c3p0 DataSources if `true` (or unset). The plugin will do nothing if this value is `false`.
 + `c3p0.play.importPlayStyleConfig`: [boolean value, default is `true`, __very rarely used__] If set to `false`, c3p0 will _not_ try
 to transalte and import Play-style config. This is useful if you wish to run your app in mixed mode, with some
 c3p0 DataSources and some BoneCP DataSources. You can configure c3p0 DataSources with `c3p0.play.dataSourceNames`

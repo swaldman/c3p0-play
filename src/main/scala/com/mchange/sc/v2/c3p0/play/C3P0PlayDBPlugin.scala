@@ -50,14 +50,16 @@ import MLevel._;
 
 object C3P0PlayDBPlugin{
   implicit val logger = MLogger( this );
+  val EagerKey = "c3p0.play.eager";
 }
 
 class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
-  import C3P0PlayDBPlugin.logger;
+  import C3P0PlayDBPlugin._;
 
   override def onStart() : Unit = {
     updateC3P0Configuration( c3p0Configuration, application );
-    eagerInitialize;
+    val eager = c3p0Configuration.getBoolean( EagerKey ).getOrElse( true );
+    initialize( eager );
   }
 
   override def api: DBApi = c3p0DBApi;
@@ -70,7 +72,7 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
   override lazy val enabled = {
     val _enabled = c3p0Configuration.getBoolean( C3P0PlayConfig.EnabledConfigKey ).getOrElse( true );
     if ( _enabled && c3p0Configuration.getString("dbplugin").getOrElse("enabled") != "disabled") {
-      SEVERE.log("dbplugin --> " + c3p0Configuration.getString("dbplugin") );
+      // SEVERE.log("dbplugin --> " + c3p0Configuration.getString("dbplugin") );
       val importConfig = c3p0Configuration.getBoolean( C3P0PlayConfig.ImportPlayStyleConfigKey ).getOrElse( true );
       if ( importConfig ) {
         WARNING.log(
@@ -86,8 +88,8 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
              |If you wish to have a mixture of BoneCP and c3p0 DataSources, set 
              |'c3p0.play.importPlayStyleConfig=false' and define the c3p0 DataSources
              |as a comma-separated list under the key 'c3p0.play.dataSourceNames'
-             |then configure each DataSource as HOCON named configurations. Please
-             |see http://www.mchange.com/projects/c3p0/#named_configurations""".stripMargin
+             |then configure c3p0 DataSources in c3p0-native HOCON config using default and named configurations. Please
+             |see http://www.mchange.com/projects/c3p0/""".stripMargin
         )
       } else {
         INFO.log(
@@ -109,7 +111,7 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
 
 
   // TODO: ensure jndiName maps to an extension
-  private[this] def eagerInitialize : Unit = {
+  private[this] def initialize( eager : Boolean ) : Unit = {
     def tryInitialize( ds : DataSource, dsn : String ) : Unit = {
       val cpds = ds.asInstanceOf[ComboPooledDataSource]
       val jndiName = cpds.getExtensions.get( "jndiName" ).asInstanceOf[String];
@@ -117,14 +119,16 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
       var dsInit   : Option[Int] = None;
       var jndiInit : Option[Int] = None;
       try {
-        ds.getConnection.close;
+        if ( eager )
+          ds.getConnection.close;
         dsInit = Some(1);
         if ( jndiName != null ) {
           JNDI.initialContext.rebind( dsn, ds );
           jndiInit = Some(1);
         }
 
-        INFO.log(s"c3p0 datasource '${cpds.getDataSourceName }' initialized" + jndiInit.fold(".")( i => s" and bound under JNDI name '${jndiName}'." ) )
+        val createdOrInitialized = if ( eager ) "created (but not initialized)" else "initialized";
+        INFO.log(s"c3p0 datasource '${cpds.getDataSourceName }' ${ createdOrInitialized }" + jndiInit.fold(".")( i => s" and bound under JNDI name '${jndiName}'." ) )
 
       } catch {
         case e : Exception => {
