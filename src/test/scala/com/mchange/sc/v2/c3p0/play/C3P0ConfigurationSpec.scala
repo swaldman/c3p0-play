@@ -46,7 +46,7 @@ class C3P0ConfigurationSpec extends Specification {
           ConnectionCustomizer params [initSQL, isolation, autocommit, defaultCatalog] become extensions $e7
           ConnectionCustomizer params provoke connectionCustomizerClassName                              $e8
           ConnectionCustomizer conflict provokes Exception                                               $e9
-          ConnectionCustomizer customizes autocommit                                                     $e10
+          ConnectionCustomizer customizes autocommit and isolation                                       $e10
              """;
 
   def e1 = {
@@ -141,9 +141,10 @@ class C3P0ConfigurationSpec extends Specification {
     withConfiguration( testConnectionCustomization ){
       withCpds( "default" ){ ds1 =>
         val conn = ds1.getConnection;
-        val out = conn.getAutoCommit;
+        val autoCommit = conn.getAutoCommit;
+        val isolation = conn.getTransactionIsolation;
         conn.close;
-        out == false
+        autoCommit == false && isolation == java.sql.Connection.TRANSACTION_SERIALIZABLE
       }
     }
   }
@@ -314,6 +315,7 @@ db.default.url="jdbc:h2:mem:play"
 db.default.user=sa
 db.default.password=secret
 db.default.autocommit=false
+db.default.isolation=TRANSACTION_SERIALIZABLE
    """
   );
 

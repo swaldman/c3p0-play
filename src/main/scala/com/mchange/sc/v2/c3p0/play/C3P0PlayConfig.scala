@@ -202,18 +202,26 @@ object C3P0PlayConfig {
     }
   }
   class Customizer extends AbstractConnectionCustomizer {
+    // Standard Connection properties can be modified once in onAcquire( ... ) and remain
+    // fixed for the tenure of the Connection, See http://www.mchange.com/projects/c3p0/apidocs/com/mchange/v2/c3p0/ConnectionCustomizer.html#onAcquire(java.sql.Connection, java.lang.String)
+    override def onAcquire( c : java.sql.Connection, parentDataSourceIdentityToken : String ) {
+      val extensions : java.util.Map[String,String] = extensionsForToken( parentDataSourceIdentityToken ).asInstanceOf[java.util.Map[String,String]];
+
+      import Customizer.Key;
+      val is = extensions.get( Key.isolation );
+      val de = extensions.get( Key.defaultCatalog );
+
+      if ( is != null ) c.setTransactionIsolation( isolationCode( is ) );
+      if ( de != null ) c.setCatalog( de );
+    }
     override def onCheckOut( c : java.sql.Connection, parentDataSourceIdentityToken : String ) {
       val extensions : java.util.Map[String,String] = extensionsForToken( parentDataSourceIdentityToken ).asInstanceOf[java.util.Map[String,String]];
 
       import Customizer.Key;
-      val au = extensions.get( Key.autocommit );
-      val is = extensions.get( Key.isolation );
-      val de = extensions.get( Key.defaultCatalog );
       val in = extensions.get( Key.initSQL );
+      val au = extensions.get( Key.autocommit );
 
       if ( au != null ) c.setAutoCommit( au.toBoolean );
-      if ( is != null ) c.setTransactionIsolation( isolationCode( is ) );
-      if ( de != null ) c.setCatalog( de );
 
       if (in != null) {
         var stmt : java.sql.Statement = null;
