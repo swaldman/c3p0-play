@@ -44,9 +44,9 @@ import com.mchange.v3.hocon.HoconMultiPropertiesConfig;
 package object play {
   // def updateC3P0Configuration( application : Application ) : Unit = updateC3P0Configuration( application.configuration, application );
 
-  def updateC3P0Configuration( configuration : Configuration, application : Application ) : Unit = {
-    val appId = "play-application:" + application.path.getPath;
-    val mpc = new HoconMultiPropertiesConfig( appId, configuration.underlying );
+  def updateC3P0Configuration( c3p0Configuration : Configuration, application : Option[Application] = None ) : Unit = {
+    val appId = "play-application:" + application.fold( "unknown" )( _.path.getPath );
+    val mpc = new HoconMultiPropertiesConfig( appId, c3p0Configuration.underlying );
     //com.mchange.v2.cfg.ConfigUtils.dumpByPrefix( mpc, "" );
     C3P0Config.refreshMainConfig( Array[MultiPropertiesConfig]( mpc ), appId );
   }

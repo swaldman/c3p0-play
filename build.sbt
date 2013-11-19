@@ -14,7 +14,8 @@ libraryDependencies ++= Seq(
   "com.mchange" % "c3p0" % "0.9.5-pre6-SNAPSHOT" changing(), 
   "com.mchange" % "mchange-commons-java" % "0.2.6.3-SNAPSHOT" changing(), 
   "com.mchange" %% "mlog-scala" % "0.3.0", 
-  "com.typesafe.play" %% "play-jdbc" % "2.2.0"
+  "com.typesafe.play" %% "play-jdbc" % "2.2.0",
+  "org.specs2" %% "specs2" % "2.3.4+" % "test"
 )
 
 resolvers ++= Seq(

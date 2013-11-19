@@ -38,7 +38,6 @@ package com.mchange.sc.v2.c3p0.play;
 import scala.util.Try;
 import scala.util.Failure;
 
-import play.api.Application;
 import play.api.Configuration;
 
 import com.mchange.v2.c3p0.AbstractConnectionCustomizer;
@@ -227,16 +226,16 @@ object C3P0PlayConfig {
       }
     }
   }
-  def apply( application : Application ) = new C3P0PlayConfig( application )
+  def apply( appconfiguration : Configuration ) = new C3P0PlayConfig( appconfiguration )
 }
 
-class C3P0PlayConfig( application : Application ){
+class C3P0PlayConfig( appconfiguration : Configuration ){
   import C3P0PlayConfig._;
 
-  private[this] val shouldImportPlayStyleConfig : Boolean = application.configuration.getBoolean( ImportPlayStyleConfigKey ).getOrElse( true );
+  private[this] val shouldImportPlayStyleConfig : Boolean = appconfiguration.getBoolean( ImportPlayStyleConfigKey ).getOrElse( true );
 
   val config : Config = {
-    val dsnamed = listifyDataSourceNames( application.configuration.underlying );
+    val dsnamed = listifyDataSourceNames( appconfiguration.underlying );
     val withImports = if ( shouldImportPlayStyleConfig ) {
       val imported = PlayBoneCpConfig( dsnamed );
       mergeConfiguration( dsnamed, imported );
@@ -249,7 +248,7 @@ class C3P0PlayConfig( application : Application ){
 
   val configuration : Configuration = Configuration( config )
 
-  private[this] def reportError(path: String, message: String, e : Option[Throwable] = None) : Nothing = throw application.configuration.reportError( path, message, e );
+  private[this] def reportError(path: String, message: String, e : Option[Throwable] = None) : Nothing = throw appconfiguration.reportError( path, message, e );
 
   private[this] def listifyDataSourceNames( beforeFix : Config ) : Config = {
     import java.util.Arrays;
@@ -278,14 +277,14 @@ class C3P0PlayConfig( application : Application ){
 
       // we need to shadow variables also provided via c3p0-native config
       val shadows = try{ into.getConfig( C3P0Key ) } catch { case cme : ConfigException.Missing => ConfigFactory.empty() };
-      def unshadowed( binding : Pair[String,_] ) : Boolean = shadows.hasPath( binding._1 );
+      def unshadowed( binding : Pair[String,_] ) : Boolean = !shadows.hasPath( binding._1 );
 
       val importedBindings = ConfigValueFactory.fromAnyRef( (rawImportedBindings filter unshadowed).asJava, ImportedConfigOriginDescription );
       into.withFallback( ConfigFactory.empty( ImportedConfigOriginDescription ).withValue( NamedConfigPrefix + name, importedBindings ) );
     }
     def connectionCustomizerClassNameKey( name : String ) : String = {
       val middle = if ( name == null ) "" else (".named-configs." + name);
-      s"c3p0{$middle}.connectionCustomizerClassName"
+      s"c3p0${middle}.connectionCustomizerClassName"
     }
     def setupConnectionCustomizer( into : Config, name : String, namedConfig : NamedConfig ) : Config = {
       // We don't need to shadow c3p0-style not-named-config variables here, because c3p0 doesn't
@@ -302,8 +301,8 @@ class C3P0PlayConfig( application : Application ){
           case ( Failure( exc1 : ConfigException.Missing ), Failure( exc2 : ConfigException.Missing ) ) => {
             // Yay, no custom ConnectionCustomizers set!
             namedConfig.connectionCustomizerConfig.foldLeft( into ) { ( config, tup ) =>
-              config.withValue( NamedConfigPrefix + Customizer.Key.fromPlayCpKey( tup._1 ), ConfigValueFactory.fromAnyRef( tup._2 ) )
-            }
+              config.withValue( NamedConfigPrefix + name + ".extensions." + Customizer.Key.fromPlayCpKey( tup._1 ), ConfigValueFactory.fromAnyRef( tup._2 ) )
+            }.withValue( ncKey, ConfigValueFactory.fromAnyRef( classOf[Customizer].getName ) )
           }
           case tup => {
             val customizers = {

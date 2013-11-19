@@ -57,7 +57,7 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
   import C3P0PlayDBPlugin._;
 
   override def onStart() : Unit = {
-    updateC3P0Configuration( c3p0Configuration, application );
+    updateC3P0Configuration( c3p0Configuration, Some(application) );
     val eager = c3p0Configuration.getBoolean( EagerKey ).getOrElse( true );
     initialize( eager );
   }
@@ -105,7 +105,7 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
     _enabled
   }
 
-  private[this] lazy val c3p0Configuration : Configuration = C3P0PlayConfig( application ).configuration;
+  private[this] lazy val c3p0Configuration : Configuration = C3P0PlayConfig( application.configuration ).configuration;
 
   private[this] lazy val c3p0DBApi : C3P0PlayDBApi = new C3P0PlayDBApi( c3p0Configuration, application );
 

@@ -102,7 +102,6 @@ as long as there are no conflict with c3p0-style config:
 ```
 db.default.testConnectionOnCheckout=false
 db.awesome.testConnectionOnCheckout=true
-
 ```
 You can also embed [c3p0-standard _Named Configurations_](http://www.mchange.com/projects/c3p0/#named_configurations) 
 directly in `application.conf`:
@@ -115,16 +114,16 @@ db.default.url="jdbc:h2:mem:play"
 db.default.user=sa
 db.default.password=secret
 
-db.awesomedb.driver=org.postgresql.Driver
-db.awesomedb.url="jdbc:postgresql://localhost/awesomedb"
-db.awesomedb.user=superlative
-db.awesomedb.password=hushhush
+db.awesome.driver=org.postgresql.Driver
+db.awesome.url="jdbc:postgresql://localhost/awesomedb"
+db.awesome.user=superlative
+db.awesome.password=hushhush
 
 c3p0.minPoolSize=2
 c3p0.maxPoolSize=10
 c3p0.testConnectionOnCheckout=false
 
-c3p0.named-configs.awesomedb {
+c3p0.named-configs.awesome {
   minPoolSize=10
   maxPoolSize=30
   testConnectionsOnCheckout=true
@@ -142,10 +141,10 @@ db.default.url="jdbc:h2:mem:play"
 db.default.user=sa
 db.default.password=secret
 
-db.awesomedb.driver=org.postgresql.Driver
-db.awesomedb.url="jdbc:postgresql://localhost/awesomedb"
-db.awesomedb.user=superlative
-db.awesomedb.password=hushhush
+db.awesome.driver=org.postgresql.Driver
+db.awesome.url="jdbc:postgresql://localhost/awesomedb"
+db.awesome.user=superlative
+db.awesome.password=hushhush
 
 c3p0 {
   minPoolSize=2
@@ -153,7 +152,7 @@ c3p0 {
   testConnectionOnCheckout=false
 
   named-configs {
-    awesomedb {
+    awesome {
       minPoolSize=10
       maxPoolSize=30
       testConnectionsOnCheckout=true

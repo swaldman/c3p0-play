@@ -1,6 +1,4 @@
 + translation of pool-size parameters
-+ test of config reading
-+ test / check setup via config of ConnectionCustomizer / extensions
 + README.md: documentation of translation of parameters
 
 
