@@ -12,6 +12,7 @@ effortless first-class alternative to Play's built-in pool.
 + [c3p0-play-specific configuration parameters](#c3p0-play-specific-configuration-parameters)
 + [Alternatives and inspirations](#alternatives-and-inspirations)
 + [Contact and copyright](#contact-and-copyright)
++ [Appendix: Mapping Play-native / Bone CP config parameters to c3p0](#appendix-mapping-play-native--bone-cp-config-parameters-to-c3p0)
 
 ### Quickstart ###
 
@@ -161,6 +162,25 @@ c3p0 {
   }
 }
 ```
+
+##### Time-denominated configuration #####
+
+For time-denominated c3p0 config parameters (`acquireRetryDelay`, `checkoutTimeout`,
+`idleConnectionTestPeriod`, `maxAdministrativeTaskTime`, `maxConnectionAge`, `maxIdleTime`,
+`maxIdleTimeExcessConnections`, `propertyCycle`, `unreturnedConnectionTimeout`),
+[HOCON-standard duration units](https://github.com/typesafehub/config/blob/master/HOCON.md#duration-format) 
+are supported.
+
+For example, the following are equivalent ways of specifying
+[idleConnectionTestPeriod](http://www.mchange.com/projects/c3p0/#idleConnectionTestPeriod), whose
+natural unit is seconds:
+
+```
+c3p0.idleConnectionTestPeriod=30
+c3p0.idleConnectionTestPeriod=30 seconds
+c3p0.idleConnectionTestPeriod=3000 ms
+```
+
 ### c3p0-play-specific configuration parameters ###
 
 For the most part, c3p0-play can be configured exactly as
@@ -203,3 +223,36 @@ Copyright (C) 2013 by Machinery For Change, Inc. All rights reserved. This libra
 you under EITHER i) The [GNU Lesser General Public License (LGPL), version 2.1](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 or 
 ii) The [Eclipse Public License (EPL), version 1.0](http://www.eclipse.org/org/documents/epl-v10.php), at your option.
+
+### Appendix: Mapping Play-native / Bone CP config parameters to c3p0 ###
+
+The following properties are mapped from Play config to c3p0 parameters without modification:
+
+```
+Play/BoneCP                      c3p0
+=======================          ========================
+driver                    -->    driverClass
+url                       -->    jdbcUrl
+user                      -->    user
+password                  -->    password
+acquireIncrement          -->    acquireIncrement
+acquireRetryAttempts      -->    acquireRetryAttempts
+acquireRetryDelay         -->    acquireRetryDelay
+idleConnectionTestPeriod  -->    idleConnectionTestPeriod
+maxConnectionAge          -->    maxConnectionAge
+```
+
+The Play/BoneCP parameter `connectionTimeout` is mapped to th c3p0 parameter `clientTimeout`, but
+BoneCP's expected seconds to c3p0's expected milliseconds if no
+[time unit is specified](#time-denominated-configuration).
+
+The following Play/BoneCP configuration properties are supported via automatic installation of a
+`ConnectionCustomizer`: `autocommit`, `defaultConfig`, `initSQL`, `isolation`. They work fine,
+but if a conflicting `connectionCustomizerClassName`
+while any of these parameters are set, a configuration error will be signalled.
+
+The `jndiName` parameter, which has no c3p0-native equivalent, is supported by the plug-in.
+
+The following Play/BoneCP paramaters are _not supported and ignored_. Warnings will appear in
+your log files to remind you that they are ignored:
+`idleMaxAge`, `logStatements`, `statisticsEnabled`
