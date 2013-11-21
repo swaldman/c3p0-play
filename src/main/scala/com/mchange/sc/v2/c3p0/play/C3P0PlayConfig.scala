@@ -60,8 +60,13 @@ object C3P0PlayConfig {
 
   val EnabledConfigKey     = "c3p0.play.enabled";
 
-  val NamedConfigPrefix = "c3p0.named-configs.";
+  val NamedConfigPrefix = "c3p0.named-configs";
   val ImportedConfigOriginDescription = "c3p0-play-style-db-configuration"; 
+
+  val C3P0PoolSizeParams = Set(
+    "minPoolSize",
+    "maxPoolSize"
+  );
 
   object PlayBoneCpConfig {
     val autocommit     = "autocommit";
@@ -80,12 +85,19 @@ object C3P0PlayConfig {
 
     private[this] val UnsupportedParams = Set(
       "logStatements",
-      "maxConnectionsPerPartition",
-      "minConnectionsPerPartition",
-      "partitionCount",
       "statisticsEnabled",
       "idleMaxAge"
     );
+
+    object PoolSizeParams {
+      val partitionCount             = "partitionCount";
+      val maxConnectionsPerPartition = "maxConnectionsPerPartition";
+      val minConnectionsPerPartition = "minConnectionsPerPartition";
+
+      val Defaults = Map( partitionCount -> "2", maxConnectionsPerPartition -> "5", minConnectionsPerPartition -> "5" );
+
+      val All = Defaults.keySet;
+    }
 
     // names that have to be transformed only
     private[this] val ConfigNameMappings = Map (
@@ -99,15 +111,15 @@ object C3P0PlayConfig {
 
     private[this] val IntRegex = """^[\+\-]?\s*\d+$""".r;
 
-    private[this] val StringIntSecsToMillis : Function[String,String] = // if a straight int, secs to millisecs, otherwise leave alone
+    private[this] val StringIntSecsToMillis : Function[String,String] = // if a straight int, secs to millisecs, otherwise leave alone for HOCON duration interpretation
       ( str : String ) => IntRegex.findPrefixMatchOf(str).fold( str )( m => (m.matched.toInt * 1000).toString ) 
 
-    private[this] val StringIntMillisToSecs : Function[String,String] = // if a straight int, secs to millisecs, otherwise leave alone
+    private[this] val StringIntMillisToSecs : Function[String,String] = // if a straight int, secs to millisecs, otherwise leave alone for HOCON duration interpretation
       ( str : String ) => IntRegex.findPrefixMatchOf(str).fold( str )( m => (m.matched.toInt / 1000).toString ) 
 
     private[this] val ConfigValueMappings : Map[String,Function1[String,String]] = Map(
-      "connectionTimeout" -> StringIntSecsToMillis,
-      "idleMaxAge" -> StringIntMillisToSecs
+      "connectionTimeout" -> StringIntSecsToMillis
+      //"idleMaxAge" -> StringIntMillisToSecs
     );
 
     private[this] val identityFunction : Function1[String,String] = (str : String) => str
@@ -150,6 +162,7 @@ object C3P0PlayConfig {
           val (ccTuples, ordTuples) = supportedTuples.partition( tup => ConnectionCustomizerParams( tup._1 ) );
           NamedConfig( ordTuples.toMap, ccTuples.toMap )
         }
+
         importedNames.map { name => 
           Pair( name, namedConfigForName ( name ) ) 
         }.toMap;
@@ -288,7 +301,7 @@ class C3P0PlayConfig( appconfiguration : Configuration ){
       def unshadowed( binding : Pair[String,_] ) : Boolean = !shadows.hasPath( binding._1 );
 
       val importedBindings = ConfigValueFactory.fromAnyRef( (rawImportedBindings filter unshadowed).asJava, ImportedConfigOriginDescription );
-      into.withFallback( ConfigFactory.empty( ImportedConfigOriginDescription ).withValue( NamedConfigPrefix + name, importedBindings ) );
+      into.withFallback( ConfigFactory.empty( ImportedConfigOriginDescription ).withValue( NamedConfigPrefix + "." + name, importedBindings ) );
     }
     def connectionCustomizerClassNameKey( name : String ) : String = {
       val middle = if ( name == null ) "" else (".named-configs." + name);
@@ -309,7 +322,7 @@ class C3P0PlayConfig( appconfiguration : Configuration ){
           case ( Failure( exc1 : ConfigException.Missing ), Failure( exc2 : ConfigException.Missing ) ) => {
             // Yay, no custom ConnectionCustomizers set!
             namedConfig.connectionCustomizerConfig.foldLeft( into ) { ( config, tup ) =>
-              config.withValue( NamedConfigPrefix + name + ".extensions." + Customizer.Key.fromPlayCpKey( tup._1 ), ConfigValueFactory.fromAnyRef( tup._2 ) )
+              config.withValue( NamedConfigPrefix + "." + name + ".extensions." + Customizer.Key.fromPlayCpKey( tup._1 ), ConfigValueFactory.fromAnyRef( tup._2 ) )
             }.withValue( ncKey, ConfigValueFactory.fromAnyRef( classOf[Customizer].getName ) )
           }
           case tup => {
@@ -331,12 +344,119 @@ class C3P0PlayConfig( appconfiguration : Configuration ){
         into // the original config unchanged
       }
     }
+    def maybeImportPoolSizeParams( into : Config ) : Config = {
+      def paramsAtConfig( paramsSet : Set[String], config : Config ) : Map[String,String] = {
+        paramsSet.foldLeft( Map.empty[String,String] ){ ( map, str ) =>
+          try {
+            val value = config.getString( str );
+            map + Pair( str, value )
+          } catch {
+            case cem : ConfigException.Missing => map
+          }
+        }
+      }
+      def C3P0PoolSizeParamsAtConfig( config : Config ) = paramsAtConfig( C3P0PoolSizeParams, config );
+      def BoneCpPoolSizeParamsAtConfig( config : Config ) = paramsAtConfig( PlayBoneCpConfig.PoolSizeParams.All, config );
+      val C3P0PoolSizeParamsTopLevelConfig = C3P0PoolSizeParamsAtConfig( into.getConfig( C3P0Key ) );
+      val InitialPoolSizeTopLevelConfig : Option[Int] = {
+        try { Some( into.getConfig( C3P0Key ).getInt( "initialPoolSize" ) ) }
+        catch {
+          case cem : ConfigException.Missing => None;
+        }
+      }
+      val nameConfigMaps : Map[String,Config] = {
+        try {
+          val jmap : java.util.Map[String,ConfigValue] = into.getConfig( NamedConfigPrefix ).root();
+          jmap.asScala.keySet.map { configName =>
+            Pair( configName, into.getConfig( NamedConfigPrefix + "." + configName ) ) 
+          }.toMap
+        } catch {
+          // if there are no NamedConfigs...
+          case cem : ConfigException.Missing => Map.empty[String,Config]
+        }
+      }
+      val nameBoneCpPoolSizeParams = nameConfigMaps.map( tup => Pair( tup._1, BoneCpPoolSizeParamsAtConfig( tup._2 ) ) ).filter( tup => ! tup._2.isEmpty );
+      val nameC3P0PoolSizeParams = nameConfigMaps.map( tup => Pair( tup._1, C3P0PoolSizeParamsAtConfig( tup._2 ) ) ).filter( tup => ! tup._2.isEmpty );
+      val hasBoneCpPoolSizeConfig = !nameBoneCpPoolSizeParams.isEmpty;
+      val C3P0PoolSizeTopLevelParamNames = C3P0PoolSizeParamsTopLevelConfig.mkString("[",", ","]");
+      def logIgnoredParametersGivenTopLevelC3P0Config : Unit = {
+        // there is top-leve c3p0 pool size config, which means we will ignore all BoneCp style config with warnings
+        INFO.log {
+          val prefix = {
+            s"""|
+                |Top-level c3p0-style pool size parameters found (at least one of ${C3P0PoolSizeTopLevelParamNames}).
+                |These will be used to configures c3p0 DataSources, along with c3p0 defaults, in preference to...
+             """.trim.stripMargin;
+          }
+          val lines = for ( dsnameTup <- nameBoneCpPoolSizeParams ) yield {
+            val paramNamesString = dsnameTup._2.mkString("[",", ","]");
+            s"\n    for DataSource '${dsnameTup._1}', parameters ${paramNamesString}"
+          }.mkString("");
+
+          prefix + lines
+        }
+      }
+      def logBoneCpDefaultsRequired( dsn : String, namedScope : Map[String,String] ) : Unit = {
+        import PlayBoneCpConfig.{PoolSizeParams => BCP};
+
+        class ArrowBinding[A,B]( a : A, b : B) extends Pair[A,B](a, b) {
+          override def toString : String = s"${a} -> ${b}"
+        }
+        val defaultsRequired = ( BCP.All -- namedScope.keySet );
+        if (! defaultsRequired.isEmpty) {
+          val defaultsStr = defaultsRequired.map( param => new ArrowBinding(param, BCP.Defaults(param)) ).mkString(",");
+          INFO.log( s"BoneCP-style pool size only partially set for DataSource '${dsn}', using following defaults: ${defaultsStr}" );
+        }
+      }
+      def translateBoneCpPoolSizeContainingNamedScopeIntoConfig( config : Config, tup : Pair[String,Map[String,String]]) : Config = {
+        val configName = tup._1;
+        if ( nameC3P0PoolSizeParams.keySet( configName ) ) { // we don't interpret and modify output config, just log that we are ignoring
+          val ignoredParams = nameBoneCpPoolSizeParams( configName ).keySet.mkString("[",", ","]");
+          INFO.log( s"c3p0 pool-size params and defaults found for DataSource '${configName}'; ignoring BoneCp-style params ${ignoredParams}" );
+          config
+        } else {
+          import PlayBoneCpConfig.{PoolSizeParams => BCP};
+
+          val dsName = tup._1;
+          val map    = tup._2;
+          val partitionCount = map.getOrElse( "partitionCount", BCP.Defaults(BCP.partitionCount) ).toInt;
+          val maxConnectionsPerPartition = map.getOrElse( "maxConnectionsPerPartition", BCP.Defaults( BCP.maxConnectionsPerPartition ) ).toInt;
+          val minConnectionsPerPartition = map.getOrElse( "minConnectionsPerPartition", BCP.Defaults( BCP.minConnectionsPerPartition ) ).toInt;
+          val minPoolSize = minConnectionsPerPartition * partitionCount;
+          val maxPoolSize = maxConnectionsPerPartition * partitionCount;
+
+          // we honor any explicitly set initialPoolSize, otherwise use minPoolSize
+          val initialPoolSize = map.getOrElse("initialPoolSize", InitialPoolSizeTopLevelConfig.getOrElse( minPoolSize ) );
+
+          logBoneCpDefaultsRequired( dsName, map );
+
+          config
+            .withValue( NamedConfigPrefix + "." + dsName + "." + "minPoolSize", ConfigValueFactory.fromAnyRef( minPoolSize ) )
+            .withValue( NamedConfigPrefix + "." + dsName + "." + "maxPoolSize", ConfigValueFactory.fromAnyRef( maxPoolSize ) )
+            .withValue( NamedConfigPrefix + "." + dsName + "." + "initialPoolSize", ConfigValueFactory.fromAnyRef( initialPoolSize ) )
+        }
+      }
+
+      if ( hasBoneCpPoolSizeConfig ) {
+        if (! C3P0PoolSizeParamsTopLevelConfig.isEmpty) {
+          logIgnoredParametersGivenTopLevelC3P0Config;
+          into
+        } else {
+          // uh oh... we're going to have to examine individual named configs
+          nameBoneCpPoolSizeParams.foldLeft( into )( translateBoneCpPoolSizeContainingNamedScopeIntoConfig )
+        }
+      } else {
+        // yay! nothing to translate, nothing to do.
+        into
+      }
+    }
 
     val mergedNames = mergeDataSourceNames( premerge );
     val newConfig : Config = imported.data.foldLeft( mergedNames ){ (config, tup) => 
       val step1 = mergeOrdinaryConfig( config, tup._1, tup._2 );
       val step2 = setupConnectionCustomizer( step1, tup._1, tup._2 );
-      step2
+      val step3 = maybeImportPoolSizeParams( step2 )
+      step3
     }
     newConfig
   }
