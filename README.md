@@ -253,6 +253,21 @@ while any of these parameters are set, a configuration error will be signalled.
 
 The `jndiName` parameter, which has no c3p0-native equivalent, is supported by the plug-in.
 
+BoneCP and c3p0 define pool sizing very differently. For any DataSource (or at the top level),
+if any of c3p0 pool size parameters `minPoolSize` and `maxPoolSize` are set, they will be used
+(along with c3p0 defaults if one of the parameters is missing). __If and only if there is no c3p0-style
+pool-size information in scope for a DataSource__, then c3p0 will try to infer appropriate size
+information from BoneCP parameters `partitionCount`, `minConnectionsPerPartition`,
+`maxConnectionsPerPartition`:
+
+```
+minPoolSize = partitionCount x minConnectionsPerPartition
+maxPoolSize = partitionCount x maxConnectionsPerPartition
+```
+
+The plugin will warn (in logs at `INFO`) if BoneCP-style parameters are present and shadowed by
+c3p0-style parameters.
+
 The following Play/BoneCP paramaters are _not supported and ignored_. Warnings will appear in
 your log files to remind you that they are ignored:
 `idleMaxAge`, `logStatements`, `statisticsEnabled`
