@@ -3,6 +3,7 @@ package com.mchange.sc.v2.c3p0.play;
 import com.typesafe.config._;
 import com.mchange.sc.v2.c3p0.play._;
 import org.specs2._;
+import scala.collection.JavaConverters._;
 
 import scala.util.Try;
 import play.api.Configuration;
@@ -19,10 +20,12 @@ object C3P0ConfigurationSpec {
     }
   }
 
-  def withConfiguration[T]( c3p0Configuration : Configuration )( op : => T ) = {
+  def withConfiguration[T]( c3p0Configuration : Configuration, dumpConfig : Boolean = false )( op : => T ) = {
     classOf[C3P0Config].synchronized {
       try {
         updateC3P0Configuration( c3p0Configuration );
+        if ( dumpConfig )
+          C3P0Config.allCurrentProperties.entrySet.asScala.foreach( entry => println( s"${entry.getKey}=${entry.getValue}" ) );
         op
       } finally {
         revertC3P0Configuration()
@@ -47,6 +50,9 @@ class C3P0ConfigurationSpec extends Specification {
           ConnectionCustomizer params provoke connectionCustomizerClassName                              $e8
           ConnectionCustomizer conflict provokes Exception                                               $e9
           ConnectionCustomizer customizes autocommit and isolation                                       $e10
+          Import BoneCP-style size information                                                           $e11
+          Local shadow of BoneCP-style size information                                                  $e12
+          Global shadow of BoneCP-style size information                                                 $e13
              """;
 
   def e1 = {
@@ -145,6 +151,31 @@ class C3P0ConfigurationSpec extends Specification {
         val isolation = conn.getTransactionIsolation;
         conn.close;
         autoCommit == false && isolation == java.sql.Connection.TRANSACTION_SERIALIZABLE
+      }
+    }
+  }
+
+  def e11 = {
+    withConfiguration( testBoneCpPoolSizeImports ){
+      withCpds( "default" ){ ds =>
+
+        ds.getMinPoolSize() == 16 && ds.getMaxPoolSize() == 24
+      }
+    }
+  }
+
+  def e12 = {
+    withConfiguration( testBoneCpPoolSizeLocalShadow ){
+      withCpds( "default" ){ ds =>
+        ds.getMinPoolSize() == 5 && ds.getMaxPoolSize() == 15 //c3p0-default maxPoolSize
+      }
+    }
+  }
+
+  def e13 = {
+    withConfiguration( testBoneCpPoolSizeTopLevelShadow ){
+      withCpds( "default" ){ ds =>
+        ds.getMinPoolSize() == 3 && ds.getMaxPoolSize() == 25 //c3p0-default minPoolSize
       }
     }
   }
@@ -316,6 +347,56 @@ db.default.user=sa
 db.default.password=secret
 db.default.autocommit=false
 db.default.isolation=TRANSACTION_SERIALIZABLE
+   """
+  );
+
+  val testBoneCpPoolSizeImports = makeConfiguration(
+    """
+dbplugin=disabled
+c3p0.play.enabled=true
+
+db.default.driver=org.h2.Driver
+db.default.url="jdbc:h2:mem:play"
+db.default.user=sa
+db.default.password=secret
+
+db.default.partitionCount=4
+db.default.minConnectionsPerPartition=4
+db.default.maxConnectionsPerPartition=6
+   """
+  );
+
+  val testBoneCpPoolSizeLocalShadow = makeConfiguration(
+    """
+dbplugin=disabled
+c3p0.play.enabled=true
+
+db.default.driver=org.h2.Driver
+db.default.url="jdbc:h2:mem:play"
+db.default.user=sa
+db.default.password=secret
+
+db.default.partitionCount=4
+db.default.minConnectionsPerPartition=4
+db.default.maxConnectionsPerPartition=6
+db.default.minPoolSize=5
+   """
+  );
+
+  val testBoneCpPoolSizeTopLevelShadow = makeConfiguration(
+    """
+dbplugin=disabled
+c3p0.play.enabled=true
+
+db.default.driver=org.h2.Driver
+db.default.url="jdbc:h2:mem:play"
+db.default.user=sa
+db.default.password=secret
+
+db.default.partitionCount=4
+db.default.minConnectionsPerPartition=4
+db.default.maxConnectionsPerPartition=6
+db.default.maxPoolSize=25
    """
   );
 
