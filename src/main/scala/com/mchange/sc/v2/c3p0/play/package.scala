@@ -38,6 +38,7 @@ package com.mchange.sc.v2.c3p0;
 import _root_.play.api.Application;
 import _root_.play.api.Configuration;
 import com.mchange.v2.c3p0.cfg.C3P0Config;
+import com.mchange.sc.v1.log.MLog;
 import com.mchange.v2.cfg.MultiPropertiesConfig;
 import com.mchange.v3.hocon.HoconMultiPropertiesConfig;
 
@@ -48,7 +49,12 @@ package object play {
     val appId = "play-application:" + application.fold( "unknown" )( _.path.getPath );
     val mpc = new HoconMultiPropertiesConfig( appId, c3p0Configuration.underlying );
     //com.mchange.v2.cfg.ConfigUtils.dumpByPrefix( mpc, "" );
-    C3P0Config.refreshMainConfig( Array[MultiPropertiesConfig]( mpc ), appId );
+    val overrides = Array[MultiPropertiesConfig]( mpc );
+    MLog.refreshConfig( Some( overrides ), Some( appId ) );
+    C3P0Config.refreshMainConfig( overrides , appId );
   }
-  def revertC3P0Configuration() : Unit = C3P0Config.refreshMainConfig();
+  def revertC3P0Configuration() : Unit = {
+    MLog.refreshConfig();
+    C3P0Config.refreshMainConfig();
+  }
 }
