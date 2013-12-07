@@ -1,4 +1,4 @@
-version := "0.1.0-SNAPSHOT"
+version := "0.1.0"
 
 organization := "com.mchange"
 
@@ -11,9 +11,9 @@ scalaVersion in Global := "2.10.2"
 scalacOptions := Seq("-feature", "-deprecation")
 
 libraryDependencies ++= Seq(
-  "com.mchange" % "c3p0" % "0.9.5-pre6-SNAPSHOT" changing(), 
-  "com.mchange" % "mchange-commons-java" % "0.2.6.3-SNAPSHOT" changing(), 
-  "com.mchange" %% "mlog-scala" % "0.3.1-SNAPSHOT" changing(), 
+  "com.mchange" % "c3p0" % "0.9.5-pre6", 
+  "com.mchange" % "mchange-commons-java" % "0.2.6.3", 
+  "com.mchange" %% "mlog-scala" % "0.3.2", 
   "com.typesafe.play" %% "play-jdbc" % "2.2.0" % "compile,optional",
   "org.specs2" %% "specs2" % "2.3.4+" % "test"
 )

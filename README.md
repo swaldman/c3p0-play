@@ -20,7 +20,7 @@ effortless first-class alternative to Play's built-in pool.
 + Add the c3p0-play plug-in to your Play project's build.sbt as a libraryDependency:
 
 ```
-libraryDependencies += "com.mchange" %%  "c3p0-play"  % "0.1.0-SNAPSHOT"
+libraryDependencies += "com.mchange" %%  "c3p0-play"  % "0.1.0"
 ```
 
 + Disable the default pool and enable c3p0 in your Play application's `conf/application.conf` file.
