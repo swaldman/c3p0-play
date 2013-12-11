@@ -99,7 +99,7 @@ c3p0.minPoolSize=2
 c3p0.maxPoolSize=10
 ```
 Very often, you will want to provide distinct configuration for the two DataSources. You can do that Play-style,
-as long as there are no conflict with c3p0-style config:
+as long as there are no conflicts with c3p0-style config:
 ```
 db.default.testConnectionOnCheckout=false
 db.awesome.testConnectionOnCheckout=true
