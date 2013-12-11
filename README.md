@@ -30,7 +30,7 @@ dbplugin=disabled
 c3p0.play.enabled=true
 ```
 
-+ Congratulations! You're app will now use c3p0. Please see below for configuration detals.
++ Congratulations! You're app will now use c3p0. Please see below for configuration details.
 
 ### Basic configuration ###
 
