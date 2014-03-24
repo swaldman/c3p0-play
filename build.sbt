@@ -1,6 +1,6 @@
 val projectName = "c3p0-play"
 
-version := "0.1.0"
+version := "0.1.1"
 
 organization := "com.mchange"
 
@@ -13,9 +13,8 @@ scalaVersion in Global := "2.10.3"
 scalacOptions := Seq("-feature", "-deprecation")
 
 libraryDependencies ++= Seq(
-  "com.mchange" % "c3p0" % "0.9.5-pre6", 
-  "com.mchange" % "mchange-commons-java" % "0.2.6.3", 
-  "com.mchange" %% "mlog-scala" % "0.3.2", 
+  "com.mchange" % "c3p0" % "0.9.5-pre7", 
+  "com.mchange" %% "mlog-scala" % "0.3.3", 
   "com.typesafe.play" %% "play-jdbc" % "2.2.0" % "compile,optional",
   "org.specs2" %% "specs2" % "2.3.4+" % "test"
 )
