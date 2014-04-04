@@ -13,8 +13,8 @@ scalaVersion in Global := "2.10.3"
 scalacOptions := Seq("-feature", "-deprecation")
 
 libraryDependencies ++= Seq(
-  "com.mchange" % "c3p0" % "0.9.5-pre7", 
-  "com.mchange" %% "mlog-scala" % "0.3.3", 
+  "com.mchange" % "c3p0" % "0.9.5-pre8", 
+  "com.mchange" %% "mlog-scala" % "0.3.4", 
   "com.typesafe.play" %% "play-jdbc" % "2.2.0" % "compile,optional",
   "org.specs2" %% "specs2" % "2.3.4+" % "test"
 )
