@@ -7,6 +7,7 @@ import scala.collection.JavaConverters._;
 
 import scala.util.Try;
 import play.api.Configuration;
+import play.api.libs.JNDI;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.mchange.v2.c3p0.cfg.C3P0Config;
 
@@ -53,6 +54,9 @@ class C3P0ConfigurationSpec extends Specification {
           Import BoneCP-style size information                                                           $e11
           Local shadow of BoneCP-style size information                                                  $e12
           Global shadow of BoneCP-style size information                                                 $e13
+          dataSourceName properly set for non-default name                                               $e14
+          dataSourceName set to "default" for name "default"                                             $e15
+          jndiName becomes an extension                                                                  $e17
              """;
 
   def e1 = {
@@ -176,6 +180,45 @@ class C3P0ConfigurationSpec extends Specification {
     withConfiguration( testBoneCpPoolSizeTopLevelShadow ){
       withCpds( "default" ){ ds =>
         ds.getMinPoolSize() == 3 && ds.getMaxPoolSize() == 25 //c3p0-default minPoolSize
+      }
+    }
+  }
+
+  def e14 = {
+    withConfiguration( testC3P0NamedConfiguration1 ){
+      withCpds( "awesome" ){ ds =>
+        ds.getDataSourceName() == "awesome"
+      }
+    }
+  }
+
+  def e15 = {
+    withConfiguration( testC3P0NamedConfiguration1 ){
+      withCpds( "default" ){ ds =>
+        ds.getDataSourceName() == "default"
+      }
+    }
+  }
+
+  /*
+   No... we'd need to start the plugin for this to work.
+   The mere configuration doesn't bind us to the InitialContext.
+
+  jndiName properly set                $e16
+
+  def e16 = {
+    withConfiguration( testJndiName ){
+      withCpds( "default" ){ ds =>
+        JNDI.initialContext.lookup( "jdbc/myDataSource" ) eq ds
+      }
+    }
+  }
+  */ 
+
+  def e17 = {
+    withConfiguration( testJndiName ){
+      withCpds( "default" ){ ds =>
+        ds.getExtensions().get("jndiName") == "jdbc/myDataSource" 
       }
     }
   }
@@ -400,6 +443,25 @@ db.default.maxPoolSize=25
    """
   );
 
+  val testJndiName = makeConfiguration(
+    """
+dbplugin=disabled
+c3p0.play.enabled=true
+
+db.default.driver=org.h2.Driver
+db.default.url="jdbc:h2:mem:play"
+db.default.user=sa
+db.default.password=secret
+db.default.jndiName="jdbc/myDataSource"
+
+db.default.acquireIncrement=1
+db.default.testConnectionOnCheckout=true
+
+c3p0.acquireIncrement=5
+c3p0.minPoolSize=10
+c3p0.maxPoolSize=30
+    """
+  );
 
 }
 

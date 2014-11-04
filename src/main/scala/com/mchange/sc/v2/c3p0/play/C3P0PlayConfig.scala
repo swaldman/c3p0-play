@@ -63,6 +63,10 @@ object C3P0PlayConfig {
   val NamedConfigPrefix = "c3p0.named-configs";
   val ImportedConfigOriginDescription = "c3p0-play-style-db-configuration"; 
 
+  val ExtensionsKey             = "extensions";
+  val ExtensionsDotPrefix       = ExtensionsKey + ".";
+  val ExtensionsDotPrefixLength = ExtensionsDotPrefix.length;
+
   val C3P0PoolSizeParams = Set(
     "minPoolSize",
     "maxPoolSize"
@@ -294,14 +298,31 @@ class C3P0PlayConfig( appconfiguration : Configuration ){
       into.withValue( DataSourceNamesKey, ConfigValueFactory.fromAnyRef( new java.util.ArrayList( javaSet ) ) )
     }
     def mergeOrdinaryConfig( into : Config, name : String, namedConfig : NamedConfig ) : Config = {
+      val namedNamedConfigPrefix = NamedConfigPrefix + "." + name;
+
       val rawImportedBindings = namedConfig.ordinaryConfig;
 
       // we need to shadow variables also provided via c3p0-native config
       val shadows = try{ into.getConfig( C3P0Key ) } catch { case cme : ConfigException.Missing => ConfigFactory.empty() };
       def unshadowed( binding : Pair[String,_] ) : Boolean = !shadows.hasPath( binding._1 );
 
-      val importedBindings = ConfigValueFactory.fromAnyRef( (rawImportedBindings filter unshadowed).asJava, ImportedConfigOriginDescription );
-      into.withFallback( ConfigFactory.empty( ImportedConfigOriginDescription ).withValue( NamedConfigPrefix + "." + name, importedBindings ) );
+      val visibleBindings = (rawImportedBindings filter unshadowed);
+      val ( extensionsBindings, normalBindings ) = visibleBindings.partition( _._1.startsWith( ExtensionsDotPrefix ) );
+
+      val normalConfigBindings = ConfigValueFactory.fromAnyRef( normalBindings.asJava, ImportedConfigOriginDescription );
+      val preextension = into
+        .withFallback( ConfigFactory.empty( ImportedConfigOriginDescription )
+        .withValue( namedNamedConfigPrefix, normalConfigBindings ) );
+
+      if ( extensionsBindings.isEmpty )
+        preextension;
+      else {
+        val nakedExtensionsBindings = extensionsBindings.map( tup => (tup._1.substring( ExtensionsDotPrefixLength ), tup._2) );
+        val extensionsConfig = ConfigFactory.empty( ImportedConfigOriginDescription )
+          .withValue( ExtensionsKey, ConfigValueFactory.fromAnyRef( nakedExtensionsBindings.asJava, ImportedConfigOriginDescription ) );
+        val placedExtensionsConfig = extensionsConfig.atPath( namedNamedConfigPrefix );
+        placedExtensionsConfig.withFallback( preextension )
+      }
     }
     def connectionCustomizerClassNameKey( name : String ) : String = {
       val middle = if ( name == null ) "" else (".named-configs." + name);

@@ -123,7 +123,7 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
           ds.getConnection.close;
         dsInit = Some(1);
         if ( jndiName != null ) {
-          JNDI.initialContext.rebind( dsn, ds );
+          JNDI.initialContext.rebind( jndiName, ds );
           jndiInit = Some(1);
         }
 
@@ -152,19 +152,22 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
   }
 
   private[this] def deinitialize = {
-    def tryInitialize( ds : DataSource, dsn : String ) : Unit = {
+    def tryDeinitialize( ds : DataSource, dsn : String ) : Unit = {
       val cpds = ds.asInstanceOf[ComboPooledDataSource]
       val jndiName = cpds.getExtensions.get( "jndiName" ).asInstanceOf[String];
 
-      Try{ cpds.close }.recover {
-        case t : Throwable => WARNING.log( s"Exception on close of DataSource '${cpds.getDataSourceName}'.", t )
-      }
       if ( jndiName != null ) {
         Try{ JNDI.initialContext.unbind( jndiName ) }.recover {
           case t : Throwable => WARNING.log( s"Exception on unbinding jndiName '${jndiName}' for DataSource '${cpds.getDataSourceName}'.", t )
         }
       }
+      Try{ cpds.close }.recover {
+        case t : Throwable => WARNING.log( s"Exception on close of DataSource '${cpds.getDataSourceName}'.", t )
+      }
       INFO.log( s"Closed and unbound c3p0 DataSource '${ cpds.getDataSourceName }'." );
+    }
+    api.datasources.map{ tup =>
+      tryDeinitialize( tup._1, tup._2 )
     }
   }
 }
