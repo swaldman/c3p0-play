@@ -110,7 +110,7 @@ object C3P0PlayConfig {
       "pass" -> "password",
       "connectionTestStatement" -> "preferredTestQuery",
       "connectionTimeout" -> "clientTimeout",
-      "jndiName" -> "extensions.jndiName"
+      "jndiName" -> (ExtensionsDotPrefix + "jndiName")
     );
 
     private[this] val IntRegex = """^[\+\-]?\s*\d+$""".r;
@@ -298,6 +298,8 @@ class C3P0PlayConfig( appconfiguration : Configuration ){
       into.withValue( DataSourceNamesKey, ConfigValueFactory.fromAnyRef( new java.util.ArrayList( javaSet ) ) )
     }
     def mergeOrdinaryConfig( into : Config, name : String, namedConfig : NamedConfig ) : Config = {
+      FINEST.log("mergeOrdinaryConfig(...)");
+
       val namedNamedConfigPrefix = NamedConfigPrefix + "." + name;
 
       val rawImportedBindings = namedConfig.ordinaryConfig;
@@ -307,6 +309,17 @@ class C3P0PlayConfig( appconfiguration : Configuration ){
       def unshadowed( binding : Pair[String,_] ) : Boolean = !shadows.hasPath( binding._1 );
 
       val visibleBindings = (rawImportedBindings filter unshadowed);
+      FINE.log { 
+        def filterAuthInfo( tup : Tuple2[String,String] ) : Tuple2[String,String] = {
+          if ( tup._1 == "user" || tup._1 == "password" )
+            tup._1 -> "******";
+          else
+            tup
+        }
+        val bindings = visibleBindings.map( filterAuthInfo ).mkString(", ");
+        s"visibleBindings for name ${name}: ${ bindings }" 
+      };
+
       val ( extensionsBindings, normalBindings ) = visibleBindings.partition( _._1.startsWith( ExtensionsDotPrefix ) );
 
       val normalConfigBindings = ConfigValueFactory.fromAnyRef( normalBindings.asJava, ImportedConfigOriginDescription );

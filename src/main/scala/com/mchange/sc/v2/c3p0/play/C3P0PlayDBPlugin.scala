@@ -45,6 +45,7 @@ import scala.util.Try;
 import javax.sql.DataSource;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
+import javax.naming._;
 import com.mchange.sc.v1.log._;
 import MLevel._;
 
@@ -113,8 +114,15 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
   // TODO: ensure jndiName maps to an extension
   private[this] def initialize( eager : Boolean ) : Unit = {
     def tryInitialize( ds : DataSource, dsn : String ) : Unit = {
+
       val cpds = ds.asInstanceOf[ComboPooledDataSource]
       val jndiName = cpds.getExtensions.get( "jndiName" ).asInstanceOf[String];
+
+      FINE.log{
+        import scala.collection.JavaConverters._;
+        val extensions = cpds.getExtensions.asScala.mkString(", ");
+        s"Extensions: ${extensions}" 
+      }
 
       var dsInit   : Option[Int] = None;
       var jndiInit : Option[Int] = None;
@@ -123,11 +131,26 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
           ds.getConnection.close;
         dsInit = Some(1);
         if ( jndiName != null ) {
+          val path = jndiName.split("/");
+          if ( path.length > 1 ) {
+            var ctx : Context = JNDI.initialContext;
+            path.dropRight(1).foreach { element =>
+              try {
+                ctx = ctx.createSubcontext( element );
+                FINE.log( s"Created JNDI path element '${element}'.");
+              } catch {
+                case e : NameAlreadyBoundException => {
+                  FINE.log( s"Path element '${element}' has already been created.");
+                } // case
+              } // catch
+            } // foreach
+          } // if
           JNDI.initialContext.rebind( jndiName, ds );
+          FINE.log( s"Bound c3p0 DataSource '${dsn}' to jndiName '${jndiName}'." );
           jndiInit = Some(1);
         }
 
-        val createdOrInitialized = if ( eager ) "created (but not initialized)" else "initialized";
+        val createdOrInitialized = if ( eager ) "initialized" else "created (but not initialized)";
         INFO.log(s"c3p0 datasource '${cpds.getDataSourceName }' ${ createdOrInitialized }" + jndiInit.fold(".")( i => s" and bound under JNDI name '${jndiName}'." ) )
 
       } catch {
@@ -157,7 +180,10 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
       val jndiName = cpds.getExtensions.get( "jndiName" ).asInstanceOf[String];
 
       if ( jndiName != null ) {
-        Try{ JNDI.initialContext.unbind( jndiName ) }.recover {
+        Try{ 
+          JNDI.initialContext.unbind( jndiName );
+          FINE.log( s"Unbound c3p0 DataSource '${dsn}' from jndiName '${jndiName}'." );
+        }.recover {
           case t : Throwable => WARNING.log( s"Exception on unbinding jndiName '${jndiName}' for DataSource '${cpds.getDataSourceName}'.", t )
         }
       }
@@ -171,3 +197,26 @@ class C3P0PlayDBPlugin( application : Application ) extends DBPlugin {
     }
   }
 }
+
+          /*
+          var ctx : Context = JNDI.initialContext;
+          val name : String = {
+            if ( path.length == 1 ) // not a path at all, a simple name
+              jndiName
+            else {
+              // lots of side effects here!
+              path.dropRight(1).foreach { element =>
+                try {
+                  ctx = ctx.createSubcontext( element );
+                  FINE.log( s"Created path element '${element}'.");
+                } catch {
+                  case e : NameAlreadyBoundException => {
+                    FINE.log( s"Path element '${element}' has already been created.");
+                  }
+                }
+              }
+              path.last;
+            }
+          }
+          ctx.rebind( name, ds )
+          */ 
