@@ -1,36 +1,27 @@
 val projectName = "c3p0-play"
 
-version := "0.1.3"
+version := "0.1.4"
+
+scalaVersion := "2.10.7"
 
 organization := "com.mchange"
 
 name := projectName
 
-sbtVersion in Global := "0.13.0"
-
-scalaVersion in Global := "2.10.3"
-
 scalacOptions := Seq("-feature", "-deprecation")
 
 libraryDependencies ++= Seq(
-  "com.mchange" % "c3p0" % "0.9.5-pre10", 
-  "com.mchange" %% "mlog-scala" % "0.3.4", 
+  "com.mchange" % "c3p0" % "0.12.0",
+  "com.mchange" %% "mlog-scala" % "0.4.1",
   "com.typesafe.play" %% "play-jdbc" % "2.2.0" % "compile,optional",
   "org.specs2" %% "specs2" % "2.3.4+" % "test"
 )
 
-resolvers ++= Seq(
-  "typesafe" at "http://repo.typesafe.com/typesafe/releases", 
-  "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-)
+resolvers += "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases/"
 
-publishTo <<= version { 
-  (v: String) => {
-    if (v.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at "https://oss.sonatype.org/content/repositories/snapshots" )
-    else
-      Some("releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2" )
-  }
+publishTo := {
+  val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+  if (version.value.endsWith("-SNAPSHOT")) Some("central-snapshots" at centralSnapshots) else localStaging.value
 }
 
 pomExtra := (
